@@ -1,0 +1,6 @@
+test_file*
+cache/
+*.db
+*.pyc
+*.log
+
