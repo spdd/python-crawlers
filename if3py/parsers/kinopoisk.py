@@ -31,11 +31,11 @@ class KinopoiskParser:
 			self.session = requests.Session() 
 		else:
 			# 'phantom' or 'firefox'
-			self.selenium = Selenium('phantom') 
+			self.selenium = Selenium() 
 
-	def get_page_source(self, url):
+	def get_page_source(self, url, is_wall = False):
 		if self.use_selenium:
-			return self.selenium.get_page_source(url)
+			return self.selenium.get_page_source(url, is_wall)
 		else:
 			request = self.session.get(url)
 			return request.text
@@ -43,10 +43,10 @@ class KinopoiskParser:
 	def load_film(self, film_id, add=''):
 		logger.info('load film id: {0}'.format(film_id))
 		url = 'https://www.kinopoisk.ru/film/%s%s' %  (film_id, add)
-		return self.get_page_source(url)
+		return self.get_page_source(url, is_wall = True)
 
 	def load_film_wall(self, film_id):
-		self.load_film(film_id, add='/wall/')
+		return self.load_film(film_id, add='/wall/')
 
 	def retrive_country(self, film_id):
 		text = self.load_film(film_id)
@@ -95,11 +95,17 @@ class ParserTop250Walls(KinopoiskParser):
 	def process_img(self, text, film):
 		soup = BeautifulSoup(text)
 		film_list = soup.find('table', {'class': 'fotos fotos2'})
+		if film_list is None: 
+			film_list = soup.find('table', {'class': 'fotos fotos1'})
+			if film_list is None: # page not have wallpapers	
+				logger.info('film {0} not have wallpapers'.format(film.film_id))
+				return
 		alla = film_list.find_all('a', href=True)
-		logger.info(alla)
+		#logger.info(alla)
 		for a in alla: # get only 800x600 wallpaper
 			url = a.get('href')
 			img_url = self.getImageUrl(url)
+			img_url = '{0}{1}'.format('http://',img_url)
 			film.img_url = img_url
 			self.save_img(img_url, film.film_id)
 			self.save_img_url(film)
@@ -127,6 +133,7 @@ class ParserTop250Walls(KinopoiskParser):
 		shuffle(self.top_250_films)
 		provider = SqliteManager()
 		provider.processFilms(self.top_250_films)
+		#provider.close()
 
 	def clear_film_title(self, title):
 		arr = title.split()
@@ -134,7 +141,7 @@ class ParserTop250Walls(KinopoiskParser):
 		return ' '.join(arr)
 
 	def save_img(self, url, film_id):	
-		logger.info('save img url: {0}',format(url))
+		logger.info('save img url: {0}'.format(url))
 		img_data = requests.get(url).content
 		with open('cache/images/{0}_800x600.jpg'.format(film_id), 'wb') as handler:
 			handler.write(img_data)
@@ -151,8 +158,9 @@ class ParserTop250Walls(KinopoiskParser):
 				pass
 				#self.cache_page(text, 'films/film_{0}'.format(film.film_id))
 				#is_saved = True
+			#logger.info(text)
 			self.process_img(text, film)
-			sleep(5)
+			#sleep(5)
 
 	def test_setup_all(self):
 		for film in self.top_250_films:
