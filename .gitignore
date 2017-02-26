@@ -3,4 +3,4 @@ cache/
 *.db
 *.pyc
 *.log
-
+*.t7

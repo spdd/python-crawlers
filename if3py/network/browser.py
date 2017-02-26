@@ -7,7 +7,7 @@ import subprocess
 class Selenium:
 	def __init__(self, driver_type='phantom'):
 		self.driver_type = driver_type
-		self.init_driver()
+		#self.init_driver()
 
 	def init_driver(self):
 		if self.driver_type == 'firefox':
@@ -18,9 +18,11 @@ class Selenium:
 
 	def get_page_source(self, url, is_wall = False):
 		logger.info('browser load url: {0}'.format(url))
-		
+		self.init_driver()
 		self.browser.get(url)
-		return self.browser.page_source
+		html = self.browser.page_source
+		self.close()
+		return html
 
 	# suspect tor is working
 	def init_with_tor(self):
