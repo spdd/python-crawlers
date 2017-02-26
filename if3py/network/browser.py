@@ -2,6 +2,7 @@
 
 from selenium import webdriver
 from if3py.utils import logger 
+import subprocess
 
 class Selenium:
 	def __init__(self, driver_type='phantom'):
@@ -32,3 +33,8 @@ class Selenium:
 		dcap = dict(DesiredCapabilities.PHANTOMJS)
 		dcap["phantomjs.page.settings.userAgent"] = ( user_agent )
 		self.driver = webdriver.PhantomJS(desired_capabilities=dcap)
+
+	def close(self):
+		self.driver.close()
+		self.driver.quit()
+		subprocess.call(["pgrep", "phantomjs | xargs kill"])

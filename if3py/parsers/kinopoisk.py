@@ -161,6 +161,7 @@ class ParserTop250Walls(KinopoiskParser):
 			#logger.info(text)
 			self.process_img(text, film)
 			#sleep(5)
+		self.selenium.close()
 
 	def test_setup_all(self):
 		for film in self.top_250_films:
