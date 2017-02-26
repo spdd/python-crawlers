@@ -4,4 +4,4 @@
 - extract text to sqlite db
 - preprocess images
 - stylize images with deep lerning frameworks
-- preprocessin text with nlp
+- preprocessing text with nlp
