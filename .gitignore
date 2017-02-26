@@ -4,3 +4,4 @@ cache/
 *.pyc
 *.log
 *.t7
+*DS_Store

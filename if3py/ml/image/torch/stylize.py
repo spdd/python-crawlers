@@ -10,8 +10,8 @@ work_dir = os.getcwd()
 os.chdir(act_dir + 'models')
 models = [m for m in glob.glob("*.t7")]
 
-print models
-print len(models)
+print(models)
+print(len(models))
 
 lua_script = 'fast_neural_style.lua'
 
