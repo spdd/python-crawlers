@@ -13,7 +13,7 @@ class Selenium:
 		if self.driver_type == 'firefox':
 			self.self.driver = webdriver.Firefox()
 		elif self.driver_type == 'phantom':
-			self.driver = webdriver.PhantomJS()
+			self.driver = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
 		self.driver.set_window_size(1120, 550)
 
 	def get_page_source(self, url, is_wall = False):

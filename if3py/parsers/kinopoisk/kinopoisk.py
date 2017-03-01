@@ -4,23 +4,26 @@
 import requests
 from bs4 import BeautifulSoup
 from random import shuffle
-from time import sleep
 from if3py.utils import logger 
-from if3py.data.sqlite import SqliteManager
+from sqlite import arrange_films_to_db
 from if3py.network.browser import Selenium 
+
+import re
 
 TOP_250 = 'https://www.kinopoisk.ru/top/'
 BASE_URL = 'https://www.kinopoisk.ru'
 URL_TO_FILE = {TOP_250: 'cache/top250.htm'}
 
 class Film(object):
-	def __init__(self, film_id, url, name, country):
-		logger.warning('created film object: {0}'.format(film_id))
+	def __init__(self, film_id, url, title, country):
+		#logger.warning('created film object: {0}'.format(film_id))
 		self.film_id = film_id
 		self.url = url
-		self.name = name
+		self.title = title
+		self.foreign_title = ''
 		self.img_url = ''
 		self.country = country
+		self.is_eng = False
 		super(Film, self).__init__()
 		
 
@@ -152,9 +155,19 @@ class ParserTop250Walls(KinopoiskParser):
 		text = self.get_page_content(TOP_250)
 		self.cache_page(text, 'top250')
 		soup = BeautifulSoup(text)
-		all_a = soup.find_all('a', {'class': 'all'})
+		#all_a = soup.find_all('a', {'class': 'all'})
+		
+		all_places = soup.find_all('tr', {'id':re.compile("top250_place_[0-9]")})
+		#test_foreign_title = all_places[0].find('span', {'class': 'text-grey'}).get_text()
+		#test_a = all_places[0].find('a', {'class': 'all'})
+		#print(test_foreign_title)
+		#print(test_a.text)
+		print('Films count: {}'.format(len(all_places)))
 		i = 0
-		for a in all_a[2:250]:
+		for place in all_places: #all_a[2:252]
+			foreign_title = place.find('span', {'class': 'text-grey'}).get_text()
+			a = place.find('a', {'class': 'all'})
+
 			film_id = a.get('href').replace('/', ' ').split(' ')[2]
 			
 			country = self.retrive_country(film_id)
@@ -162,6 +175,9 @@ class ParserTop250Walls(KinopoiskParser):
 				continue
 			film = Film(film_id, "", self.clear_film_title(a.text)
 				, country.lower())
+			if foreign_title is not None:
+				film.is_eng = True
+				film.foreign_title = foreign_title
 			logger.info('film_id: {0}'.format(film.film_id))
 			self.top_250_films.append(film)
 			logger.info('film proceed: {0}'.format(i))
@@ -169,9 +185,7 @@ class ParserTop250Walls(KinopoiskParser):
 			i += 1
 
 		shuffle(self.top_250_films)
-		provider = SqliteManager()
-		provider.processFilms(self.top_250_films)
-		#provider.close()
+		arrange_films_to_db(self.top_250_films)
 
 	def clear_film_title(self, title):
 		arr = title.split()

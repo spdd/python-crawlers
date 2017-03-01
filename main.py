@@ -1,6 +1,7 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-from if3py.parsers.kinopoisk import ParserTop250Walls
+from if3py.parsers.kinopoisk.kinopoisk import ParserTop250Walls
 
 # 1. get list of 250 films
 # 2. get from each film its film id
