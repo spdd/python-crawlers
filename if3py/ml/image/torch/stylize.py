@@ -19,12 +19,13 @@ def get_random_model():
 	rnd_index = randint(0,len(models) - 1)
 	return models[rnd_index]
 
-def stylize_image_with_torch(in_image, out_image):
+def stylize_image_with_torch(in_image, out_image, img_size = 802, model = None):
 	os.chdir(act_dir)
-	model = get_random_model()
+	if model is None:
+		model = get_random_model()
 	subprocess.call(["th", lua_script,
 					'-model', 'models/{}'.format(model),
-					'-image_size', '802',
+					'-image_size', str(img_size),
 					 '-input_image', work_dir + '/' + in_image,
 					 '-output_image', work_dir + '/' + out_image])
 

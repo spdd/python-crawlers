@@ -19,8 +19,8 @@ class Selenium:
 	def get_page_source(self, url, is_wall = False):
 		logger.info('browser load url: {0}'.format(url))
 		self.init_driver()
-		self.browser.get(url)
-		html = self.browser.page_source
+		self.driver.get(url)
+		html = self.driver.page_source
 		self.close()
 		return html
 

@@ -8,4 +8,4 @@ from if3py.parsers.kinopoisk import ParserTop250Walls
 
 parser = ParserTop250Walls(from_cache = False)
 parser.setup_top_250_films_ids()
-parser.setup_all()
+#parser.setup_all()

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import requests
 from bs4 import BeautifulSoup
@@ -13,18 +14,19 @@ BASE_URL = 'https://www.kinopoisk.ru'
 URL_TO_FILE = {TOP_250: 'cache/top250.htm'}
 
 class Film(object):
-	def __init__(self, film_id, url, name):
+	def __init__(self, film_id, url, name, country):
 		logger.warning('created film object: {0}'.format(film_id))
 		self.film_id = film_id
 		self.url = url
 		self.name = name
 		self.img_url = ''
+		self.country = country
 		super(Film, self).__init__()
 		
 
 class KinopoiskParser:
 
-	def __init__(self, from_cache):
+	def __init__(self, from_cache = False):
 		self.use_selenium = True
 		self.from_cache = from_cache
 		if not self.use_selenium:
@@ -33,17 +35,25 @@ class KinopoiskParser:
 			# 'phantom' or 'firefox'
 			self.selenium = Selenium() 
 
-	def get_page_source(self, url, is_wall = False):
+	def get_page_source(self, url, is_wall = False, film_id = None):
+		if film_id is not None and self.check_cached_film(film_id):
+			return self.get_cached_film(film_id)
+		html = None
 		if self.use_selenium:
-			return self.selenium.get_page_source(url, is_wall)
+			html = self.selenium.get_page_source(url, is_wall)
 		else:
 			request = self.session.get(url)
-			return request.text
+			html = request.text
+
+		if film_id is not None:
+			logger.info('caching page: ' + film_id)
+			self.cache_page(html, film_id)
+		return html
 
 	def load_film(self, film_id, add=''):
 		logger.info('load film id: {0}'.format(film_id))
 		url = 'https://www.kinopoisk.ru/film/%s%s' %  (film_id, add)
-		return self.get_page_source(url, is_wall = True)
+		return self.get_page_source(url, is_wall = True, film_id = film_id)
 
 	def load_film_wall(self, film_id):
 		return self.load_film(film_id, add='/wall/')
@@ -51,14 +61,32 @@ class KinopoiskParser:
 	def retrive_country(self, film_id):
 		text = self.load_film(film_id)
 		soup = BeautifulSoup(text)
-		film_country = soup.find('table', {'class': 'fotos fotos2'}).text
-		return film_country
-
+		
+		if text is None:
+			return None
+		film_country = soup.find('table', {'class': 'info'})
+		country_td = film_country.find_all('tr')[1].find_all('td')[1]
+		country = country_td.find_all('a')[0].get_text()
+		return country
 
 	def cache_page(self, page_content, filename):
-		if not self.from_cache:
-			with open('cache/{0}.html'.format(filename), 'w') as fid:
-				fid.write(page_content.encode('utf8'))
+		import codecs
+		if self.from_cache:
+			with open('cache/films/{0}.htm'.format(filename), 'w') as fid:
+				fid.write(page_content.encode('utf-8'))
+
+	def check_cached_film(self, film_id):
+		if self.from_cache == False:
+			return False
+		from os.path import exists
+		if exists('cache/films/{0}.htm'.format(film_id)):
+			return True
+		return False
+
+	def get_cached_film(self, film_id):
+		import codecs
+		with codecs.open('cache/films/{0}.htm'.format(film_id),'r') as f:
+			return f.read()
 
 	def get_page_content(self, url):
 		if self.from_cache:
@@ -73,6 +101,9 @@ class KinopoiskParser:
 
 	def store_file_to_db(self, film):
 		pass
+
+	def close(self):
+		self.selenium.close()
 
 
 
@@ -122,14 +153,21 @@ class ParserTop250Walls(KinopoiskParser):
 		self.cache_page(text, 'top250')
 		soup = BeautifulSoup(text)
 		all_a = soup.find_all('a', {'class': 'all'})
+		i = 0
 		for a in all_a[2:250]:
 			film_id = a.get('href').replace('/', ' ').split(' ')[2]
 			
-			film = Film(film_id, "", self.clear_film_title(a.text))
+			country = self.retrive_country(film_id)
+			if country is None:
+				continue
+			film = Film(film_id, "", self.clear_film_title(a.text)
+				, country.lower())
 			logger.info('film_id: {0}'.format(film.film_id))
 			self.top_250_films.append(film)
-
+			logger.info('film proceed: {0}'.format(i))
 			logger.info(a.text)
+			i += 1
+
 		shuffle(self.top_250_films)
 		provider = SqliteManager()
 		provider.processFilms(self.top_250_films)

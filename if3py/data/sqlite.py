@@ -1,7 +1,11 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import sqlite3 as lite
 import os.path
+import json
+
+from if3py.utils import logger 
 
 class SqliteManager:
 
@@ -26,6 +30,7 @@ class SqliteManager:
 	def createJson(self, film):
 		resultString = '{ "max_length_word": "2", "words_count": "1",' 
 		resultString += '"word1":"%s",' % film.name
+		resultString += '"country":"%s",' % film.country
 		resultString += '"film_id":"%s" }' % film.film_id
 		return resultString
 
@@ -50,6 +55,26 @@ class SqliteManager:
 			self.con.commit()
 		if count % self.level_pack_count == 0:
 			self.mLevel += 1
+
+	def update_country(self, film_id, country):
+		c = self.con.cursor()
+		c.execute("SELECT * FROM puzzles")
+		parsed_string = None
+		row = 1
+		while row is not None:
+			row = c.fetchone()
+			parsed_string = json.loads(row[2])
+			if parsed_string['film_id'] == film_id:
+				parsed_string['country'] = country
+				result = json.dumps(parsed_string, ensure_ascii=False).encode('utf8')
+				print(result)
+				print(row[0])
+				print(row[1])
+				self.updatePuzzle(row[1], str(result), 0, row[0])
+				break
+		logger.info('film not found')
+		c.close()
+		
 
 	def close(self):
 		self.con.close()
