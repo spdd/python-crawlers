@@ -3,17 +3,28 @@
 import os, glob
 import subprocess
 from random import randint
+from if3py.utils import logger 
 
-act_dir = os.getcwd() + '/if3py/ml/image/torch/'
+TAG = 'TORCH_STYLIZE'
+
+models_dir = os.getcwd() + '/torch/models'
+if not os.path.exists(models_dir):
+	os.makedirs(models_dir)
+
+act_dir = os.getcwd() + '/torch/'
 
 work_dir = os.getcwd()
 os.chdir(act_dir + 'models')
+
 models = [m for m in glob.glob("*.t7")]
 
-print(models)
-print(len(models))
+logger.info(TAG, models)
+logger.info(TAG, len(models))
 
 lua_script = 'fast_neural_style.lua'
+
+if not os.path.exists(lua_script):
+	logger.info(TAG, 'Please put {0} to folder {1}'.format(lua_script, act_dir))
 
 def get_random_model():
 	rnd_index = randint(0,len(models) - 1)

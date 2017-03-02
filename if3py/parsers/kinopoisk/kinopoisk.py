@@ -10,13 +10,14 @@ from if3py.network.browser import Selenium
 
 import re
 
+TAG = 'KINOPOISK_PARSER'
+
 TOP_250 = 'https://www.kinopoisk.ru/top/'
 BASE_URL = 'https://www.kinopoisk.ru'
 URL_TO_FILE = {TOP_250: 'cache/top250.htm'}
 
 class Film(object):
 	def __init__(self, film_id, url, title, country):
-		#logger.warning('created film object: {0}'.format(film_id))
 		self.film_id = film_id
 		self.url = url
 		self.title = title
@@ -29,7 +30,8 @@ class Film(object):
 
 class KinopoiskParser:
 
-	def __init__(self, from_cache = False):
+	def __init__(self, from_cache = False, test_mode = False):
+		self.test_mode = test_mode
 		self.use_selenium = True
 		self.from_cache = from_cache
 		if not self.use_selenium:
@@ -49,12 +51,12 @@ class KinopoiskParser:
 			html = request.text
 
 		if film_id is not None:
-			logger.info('caching page: ' + film_id)
+			logger.info(TAG, 'caching page: ' + film_id)
 			self.cache_page(html, film_id)
 		return html
 
 	def load_film(self, film_id, add=''):
-		logger.info('load film id: {0}'.format(film_id))
+		logger.info(TAG, 'load film id: {0}'.format(film_id))
 		url = 'https://www.kinopoisk.ru/film/%s%s' %  (film_id, add)
 		return self.get_page_source(url, is_wall = True, film_id = film_id)
 
@@ -132,7 +134,7 @@ class ParserTop250Walls(KinopoiskParser):
 		if film_list is None: 
 			film_list = soup.find('table', {'class': 'fotos fotos1'})
 			if film_list is None: # page not have wallpapers	
-				logger.info('film {0} not have wallpapers'.format(film.film_id))
+				logger.info(TAG, 'film {0} not have wallpapers'.format(film.film_id))
 				return
 		alla = film_list.find_all('a', href=True)
 		#logger.info(alla)
@@ -147,28 +149,31 @@ class ParserTop250Walls(KinopoiskParser):
 
 	def save_img_url(self, film):
 		url = '{0} {1}'.format(film.film_id, film.img_url)
-		logger.info('save img url: {0}'.format(url))
+		logger.info(TAG, 'save img url: {0}'.format(url))
 		with open('cache/img_urls.txt', 'a') as the_file:
 			the_file.write('{0}\n'.format(url))
 
-	def setup_top_250_films_ids(self):
+	def setup_top_250_films_ids(self, film_ids_list = None):
 		text = self.get_page_content(TOP_250)
 		self.cache_page(text, 'top250')
 		soup = BeautifulSoup(text)
-		#all_a = soup.find_all('a', {'class': 'all'})
 		
 		all_places = soup.find_all('tr', {'id':re.compile("top250_place_[0-9]")})
-		#test_foreign_title = all_places[0].find('span', {'class': 'text-grey'}).get_text()
-		#test_a = all_places[0].find('a', {'class': 'all'})
-		#print(test_foreign_title)
-		#print(test_a.text)
-		print('Films count: {}'.format(len(all_places)))
+		#self.test_places(all_places)
+
+		logger.info(TAG, 'Films count: {}'.format(len(all_places)))
 		i = 0
 		for place in all_places: #all_a[2:252]
-			foreign_title = place.find('span', {'class': 'text-grey'}).get_text()
+			foreign_title = place.find('span', {'class': 'text-grey'})
+			if foreign_title is not None:
+				foreign_title = foreign_title.get_text()
 			a = place.find('a', {'class': 'all'})
 
 			film_id = a.get('href').replace('/', ' ').split(' ')[2]
+
+			if film_ids_list is not None:
+				if film_id not in film_ids_list:
+					continue
 			
 			country = self.retrive_country(film_id)
 			if country is None:
@@ -178,11 +183,15 @@ class ParserTop250Walls(KinopoiskParser):
 			if foreign_title is not None:
 				film.is_eng = True
 				film.foreign_title = foreign_title
-			logger.info('film_id: {0}'.format(film.film_id))
+			logger.info(TAG, 'film_id: {0}'.format(film.film_id))
 			self.top_250_films.append(film)
-			logger.info('film proceed: {0}'.format(i))
-			logger.info(a.text)
+			logger.info(TAG, 'film proceed: {0}'.format(i))
+			#logger.info(TAG, str(a.text))
 			i += 1
+
+			if self.test_mode:
+				if i == 2:
+					break
 
 		shuffle(self.top_250_films)
 		arrange_films_to_db(self.top_250_films)
@@ -193,31 +202,30 @@ class ParserTop250Walls(KinopoiskParser):
 		return ' '.join(arr)
 
 	def save_img(self, url, film_id):	
-		logger.info('save img url: {0}'.format(url))
+		logger.info(TAG, 'save img url: {0}'.format(url))
 		img_data = requests.get(url).content
 		with open('cache/images/{0}_800x600.jpg'.format(film_id), 'wb') as handler:
 			handler.write(img_data)
 
-	def setup_all(self):
-		is_saved = False
-		logger.info('self.top_250_films len: {0}'.format(len(self.top_250_films)))
+	def download_images(self):
+		logger.info(TAG, 'self.top_250_films len: {0}'.format(len(self.top_250_films)))
 		for film in self.top_250_films:
 			text = self.load_film_wall(film.film_id)
 			if text == None:
-				logger.info('wall page is null')
+				logger.info(TAG, 'wall page is null')
 				continue
-			if not is_saved:
-				pass
-				#self.cache_page(text, 'films/film_{0}'.format(film.film_id))
-				#is_saved = True
-			#logger.info(text)
 			self.process_img(text, film)
-			#sleep(5)
-		self.selenium.close()
+		#self.selenium.close()
 
 	def test_setup_all(self):
 		for film in self.top_250_films:
-			logger.info(film.film_id)
+			logger.info(TAG, film.film_id)
+
+	def test_places(self, all_places):
+		test_foreign_title = all_places[0].find('span', {'class': 'text-grey'}).get_text()
+		test_a = all_places[0].find('a', {'class': 'all'})
+		logger.info(TAG, test_foreign_title)
+		logger.info(TAG, test_a.text)
 
 
 

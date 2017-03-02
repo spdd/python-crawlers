@@ -7,6 +7,8 @@ import os
 from if3py.data.sqlite import SqliteManager
 from if3py.utils import logger 
 
+TAG = 'KINOPOISK_SQLITE'
+
 langs = ['ru', 'en']
 
 def arrange_films_to_db(films):
@@ -26,7 +28,7 @@ def arrange_films_to_db(films):
 
 class KinopoiskDB(SqliteManager):
 	def __init__(self, lang = 'ru'):
-		base_dir = os.path.dirname(os.path.abspath(__file__))
+		base_dir = os.getcwd() #os.path.dirname(os.path.abspath(__file__))
 		SqliteManager.__init__(self, base_dir, lang)
 		self.level_pack_count = 40
 
@@ -38,7 +40,20 @@ class KinopoiskDB(SqliteManager):
 		return resultString
 
 	def get_film_title(self, film):
-		return film.foreign_title if film.is_eng else film.title
+		if self.lang == 'ru':
+			return film.title
+		else:
+			return film.foreign_title
+
+	def transform_title(self, title):
+		return title \
+			.replace('«', '') \
+			.replace('»','') \
+			.replace('...', '') \
+			.replace('!', '')	\
+			.replace('№', '')	\
+			.replace(':', '')	\
+			.replace('-', ' ')
 
 	def process_films(self, films):
 		i = 1
@@ -47,10 +62,10 @@ class KinopoiskDB(SqliteManager):
 			row = self.cur.fetchone()
 			if row == None:
 				self.insert_puzzle(i, self.get_film_title(film), json, 0)
-				logger.info('insert {0} film with lang {1}'.format(i, self.lang))
+				logger.info(TAG, 'insert {0} film with lang {1}'.format(i, self.lang))
 			else:
 				self.update_puzzle(self.get_film_title(film), json, 0, row[0])
-				logger.info('update {0} film with lang {1}'.format(i, self.lang))
+				logger.info(TAG, 'update {0} film with lang {1}'.format(i, self.lang))
 			self.update_levels(row, i)
 			i=i+1
 
@@ -67,5 +82,5 @@ class KinopoiskDB(SqliteManager):
 				result = json.dumps(parsed_string, ensure_ascii=False).encode('utf8')
 				self.update_puzzle(row[1], str(result), 0, row[0])
 				break
-		logger.info('film not found')
+		logger.info(TAG, 'film not found')
 		c.close()
