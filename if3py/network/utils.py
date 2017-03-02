@@ -1,5 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-def blocker_checker():
-	pass
+def is_checker_blocked():
+	return False

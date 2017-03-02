@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 
-def get_actual_browser(type):
-	# get actual browser depend on a site has
-	# a blocking system for crawlers
+from if3py.network.utils import is_checker_blocked
+from if3py.network.browser import Selenium, SimpleRequests
 
-	pass
+class NetworkFactory:
+	
+	def __init__(self):
+		self.is_checker_blocked = is_checker_blocked()
 
-def is_not_has_blocker():
-	# if crawl from tor (requests lib) not bloked
-	# return True
-	pass
-
-def get_direct_browser():
-	# get direct browser (requests lib) because 
-	# site hasn't blocker
-	pass 
+	def create_browser(self, type):
+		# get actual browser depend on a site has
+		# a blocking system for crawlers
+		if self.is_checker_blocked:
+			return Selenium()
+		else:
+			return SimpleRequests()

@@ -1,26 +1,43 @@
 #!/usr/bin/env python
 
 from selenium import webdriver
+import requests
+
 from if3py.utils import logger 
+
 import subprocess
 
-TAG = 'SELENIUM'
+TAG = 'BROWSER'
 
-class Selenium:
+class BaseBrowser:
+	def __init__(self):
+		self.PRESIX = 'BASE'
+
+	def init_session(self):
+		raise NotImplementedError
+
+	def get_page_source(self, url):
+		logger.info(TAG, '{0} load url: {1}'.format(self.PRESIX, url))
+
+	def close(self):
+		pass
+
+class Selenium(BaseBrowser):
 	def __init__(self, driver_type='phantom'):
+		self.PRESIX = 'SELENIUM'
 		self.driver_type = driver_type
-		#self.init_driver()
+		#self.init_session()
 
-	def init_driver(self):
+	def init_session(self):
 		if self.driver_type == 'firefox':
 			self.self.driver = webdriver.Firefox()
 		elif self.driver_type == 'phantom':
 			self.driver = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
 		self.driver.set_window_size(1120, 550)
 
-	def get_page_source(self, url, is_wall = False):
+	def get_page_source(self, url):
 		logger.info(TAG, 'browser load url: {0}'.format(url))
-		self.init_driver()
+		self.init_session()
 		self.driver.get(url)
 		html = self.driver.page_source
 		self.close()
@@ -42,3 +59,20 @@ class Selenium:
 		self.driver.close()
 		self.driver.quit()
 		subprocess.call(["pgrep", "phantomjs | xargs kill"])
+
+
+class SimpleRequests(BaseBrowser):
+	def __init__(self):
+		self.PRESIX = 'REQUESTS'
+		self.init_session()
+
+	def init_session(self):
+		self.session = requests.Session() 
+
+	def get_page_source(self, url):
+		super.get_page_source(url)
+		request = self.session.get(url)
+		return request.text
+
+	def close(self):
+		pass

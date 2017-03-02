@@ -51,7 +51,7 @@ class KinopoiskParser:
 			return self.get_cached_film(film_id)
 		html = None
 		if self.use_selenium:
-			html = self.selenium.get_page_source(url, is_wall)
+			html = self.selenium.get_page_source(url)
 		else:
 			request = self.session.get(url)
 			html = request.text
