@@ -2,4 +2,4 @@
 # -*- coding: utf-8 -*-
 
 def is_checker_blocked():
-	return False
+	return True

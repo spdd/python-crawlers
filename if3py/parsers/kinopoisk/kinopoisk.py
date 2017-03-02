@@ -7,6 +7,7 @@ from random import shuffle
 from if3py.utils import logger 
 from sqlite import arrange_films_to_db
 from if3py.network.browser import Selenium 
+from if3py.network.factory import NetworkFactory
 
 import json
 import re
@@ -33,29 +34,15 @@ class KinopoiskParser:
 
 	def __init__(self, from_cache = False, test_mode = False):
 		self.test_mode = test_mode
-
-		# TODO: create bloker checker 
-		# 0. create blocker checker in network
-		# 1. check site with tor or public proxy (with socks5) and parse with requests
-		# 2. if parser is blocked switch to selenium
-		# 
-		self.use_selenium = True
 		self.from_cache = from_cache
-		if not self.use_selenium:
-			self.session = requests.Session() 
-		else:
-			# 'phantom' or 'firefox'
-			self.selenium = Selenium() 
+
+		factory = NetworkFactory()
+		self.browser = factory.create_browser()
 
 	def get_page_source(self, url, is_wall = False, film_id = None):
 		if film_id is not None and self.check_cached_film(film_id):
 			return self.get_cached_film(film_id)
-		html = None
-		if self.use_selenium:
-			html = self.selenium.get_page_source(url)
-		else:
-			request = self.session.get(url)
-			html = request.text
+		html = self.browser.get_page_source(url)
 
 		if film_id is not None:
 			logger.info(TAG, 'caching page: {0}'.format(film_id))
