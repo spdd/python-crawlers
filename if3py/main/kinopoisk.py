@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from if3py.parsers.kinopoisk.kinopoisk import ParserTop250Walls
+from if3py.parsers.kinopoisk.kinopoisk import KinopoiskParser, ParserTop250Walls
 from if3py.ml.image.torch.stylize import TorchStylize
 from if3py.utils import logger 
 
@@ -69,7 +69,9 @@ class KinopoiskMain:
 		pass
 
 	def get_info_with_film_id(self, film_id):
-		pass
+		parser = KinopoiskParser()
+		json_str = parser.get_json_film_info_with_id(film_id)
+		return json_str
 
 	def clear_db(self):
 		os.chdir('db')

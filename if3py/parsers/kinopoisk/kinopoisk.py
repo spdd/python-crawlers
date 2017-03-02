@@ -8,6 +8,7 @@ from if3py.utils import logger
 from sqlite import arrange_films_to_db
 from if3py.network.browser import Selenium 
 
+import json
 import re
 
 TAG = 'KINOPOISK_PARSER'
@@ -57,7 +58,7 @@ class KinopoiskParser:
 			html = request.text
 
 		if film_id is not None:
-			logger.info(TAG, 'caching page: ' + film_id)
+			logger.info(TAG, 'caching page: {0}'.format(film_id))
 			self.cache_page(html, film_id)
 		return html
 
@@ -68,6 +69,49 @@ class KinopoiskParser:
 
 	def load_film_wall(self, film_id):
 		return self.load_film(film_id, add='/wall/')
+
+	def get_json_film_info_with_id(self, film_id):
+		html = self.load_film(film_id)
+		soup = BeautifulSoup(html)
+
+		if html is None:
+			logger.info(TAG, 'film with id {0} not found'.format(film_id))
+			return None
+
+		film_hearder = soup.find('div', {'class', 'feature_film_background country_num1'})
+		title_h1 = film_hearder.find('h1', {'class', 'moviename-big'})
+		foreign_title_h1 = film_hearder.find('span')
+
+		title = title_h1.get_text()
+		foreign_title = foreign_title_h1.get_text()
+
+		film_table = soup.find('table', {'class': 'info'})
+		all_tr = film_table.find_all('tr')
+
+		keys = ['year', 'country', 'tagline_ru', 'director',
+				 'genre', 'dollar', 'time']
+		indxs = [{'num':0, 'is_a':True},
+				{'num':1, 'is_a':True},
+				{'num':2, 'is_a':False},
+				{'num':3, 'is_a':True},
+				{'num':10, 'is_a':True},
+				{'num':11, 'is_a':True},
+				{'num':19, 'is_a':False}]
+
+		film_json = {}
+		for i, tr in enumerate(all_tr):
+			if  indxs[0]['num'] == i:
+				td = tr.find_all('td')[1]
+				text = td.find_all('a')[0].get_text() if indxs[0]['is_a'] else td.get_text()
+				film_json[keys[0]] = text
+				indxs.pop(0)
+				keys.pop(0)
+
+		film_json['title'] = title
+		film_json['forreign_title'] = foreign_title
+		film_json['film_id'] = str(film_id)	
+		
+		return json.dumps(film_json, ensure_ascii=False).encode('utf8')
 
 	def retrive_country(self, film_id):
 		text = self.load_film(film_id)
