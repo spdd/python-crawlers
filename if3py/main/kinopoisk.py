@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from if3py.parsers.kinopoisk.kinopoisk import ParserTop250Walls
-from if3py.ml.image.torch.stylize import stylize_image_with_torch
+from if3py.ml.image.torch.stylize import TorchStylize
 from if3py.utils import logger 
 
 import os, glob
@@ -32,10 +32,13 @@ class KinopoiskMain:
 
 		os.chdir(self.work_dir)
 
+		torch = TorchStylize()
+
 		for im in images_names:
 			name = im.split('_')[0]
 			out_name = name + '.jpg'
-			stylize_image_with_torch('cache/images/{}'.format(im),
+
+			torch.stylize_image_with_torch('cache/images/{}'.format(im),
 									'cache/images/stylized/{}'.format(out_name),
 									img_size = 1002, 
 									model = 'mosaic.t7')
@@ -61,6 +64,12 @@ class KinopoiskMain:
 	def parse_top250_films_save_to_db(self):
 		parser = ParserTop250Walls(from_cache = False, test_mode = self.test_mode)
 		parser.setup_top_250_films_ids()
+
+	def get_info_with_film_title(self, film_title):
+		pass
+
+	def get_info_with_film_id(self, film_id):
+		pass
 
 	def clear_db(self):
 		os.chdir('db')

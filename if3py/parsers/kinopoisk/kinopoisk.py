@@ -32,6 +32,12 @@ class KinopoiskParser:
 
 	def __init__(self, from_cache = False, test_mode = False):
 		self.test_mode = test_mode
+
+		# TODO: create bloker checker 
+		# 0. create blocker checker in network
+		# 1. check site with tor or public proxy (with socks5) and parse with requests
+		# 2. if parser is blocked switch to selenium
+		# 
 		self.use_selenium = True
 		self.from_cache = from_cache
 		if not self.use_selenium:
@@ -114,8 +120,8 @@ class KinopoiskParser:
 
 class ParserTop250Walls(KinopoiskParser):
 
-	def __init__(self, from_cache):
-		KinopoiskParser.__init__(self, from_cache)
+	def __init__(self, from_cache, test_mode = False):
+		KinopoiskParser.__init__(self, from_cache, test_mode)
 		self.top_250_films = []
 
 	def getImageUrl(self, url):
