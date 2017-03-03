@@ -8,16 +8,20 @@ from if3py.utils import logger
 
 TAG = 'BASE_SQLITE'
 
+SQLITE_DB_EXT = 'sqlite'
+DB_FILE_NAME = 'data'
+DB_FOLDER = 'db'
+
 class SqliteManager:
 
 	def __init__(self, base_dir, lang = 'ru'):
 		self.lang = lang
 		logger.info(TAG, base_dir)
-		db_dir_path = os.path.join(base_dir, 'db')
+		db_dir_path = os.path.join(base_dir, DB_FOLDER)
 		if not os.path.exists(db_dir_path):
 			os.makedirs(db_dir_path)
 
-		db_path = os.path.join(base_dir, "db/data_{0}.db".format(lang))
+		db_path = os.path.join(base_dir, "{0}/{1}_{2}.{3}".format(DB_FOLDER, DB_FILE_NAME, lang, SQLITE_DB_EXT))
 
 		self.con = lite.connect(db_path)
 		with self.con:

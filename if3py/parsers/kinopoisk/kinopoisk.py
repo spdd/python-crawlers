@@ -6,13 +6,14 @@ from bs4 import BeautifulSoup
 from random import shuffle
 from if3py.utils import logger 
 from sqlite import arrange_films_to_db
-from if3py.network.browser import Selenium 
 from if3py.network.factory import NetworkFactory
 
 import json
 import re
 
 TAG = 'KINOPOISK_PARSER'
+
+IMG_FILE_FORMAT = 'jpg'
 
 TOP_250 = 'https://www.kinopoisk.ru/top/'
 BASE_URL = 'https://www.kinopoisk.ru'
@@ -51,7 +52,7 @@ class KinopoiskParser:
 
 	def load_film(self, film_id, add=''):
 		logger.info(TAG, 'load film id: {0}'.format(film_id))
-		url = 'https://www.kinopoisk.ru/film/%s%s' %  (film_id, add)
+		url = '%s/film/%s%s' %  (BASE_URL, film_id, add)
 		return self.get_page_source(url, is_wall = True, film_id = film_id)
 
 	def load_film_wall(self, film_id):
@@ -241,7 +242,7 @@ class ParserTop250Walls(KinopoiskParser):
 	def save_img(self, url, film_id):	
 		logger.info(TAG, 'save img url: {0}'.format(url))
 		img_data = requests.get(url).content
-		with open('cache/images/{0}_800x600.jpg'.format(film_id), 'wb') as handler:
+		with open('cache/images/{0}_800x600.{1}'.format(film_id, IMG_FILE_FORMAT), 'wb') as handler:
 			handler.write(img_data)
 
 	def download_images(self):

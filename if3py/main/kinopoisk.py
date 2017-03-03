@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from if3py.parsers.kinopoisk.kinopoisk import KinopoiskParser, ParserTop250Walls
+from if3py.parsers.kinopoisk.kinopoisk import KinopoiskParser, ParserTop250Walls, IMG_FILE_FORMAT
 from if3py.ml.image.torch.stylize import TorchStylize
+from if3py.data.sqlite import SQLITE_DB_EXT, DB_FOLDER
 from if3py.utils import logger 
 
 import os, glob
@@ -14,6 +15,12 @@ from random import shuffle
 
 TAG = 'KINOPOISK_MAIN'
 
+RESULT_IMAGES_FOLDER = 'stylized'
+DOWLOADED_IMAGES_FOLDER = 'cache/images/'
+
+PRIMARY_TORCH_MODEL = 'mosaic.t7'
+STYLIZED_IMG_SIZE = 1002
+
 class KinopoiskMain:
 
 	def __init__(self, test_mode = False):
@@ -22,13 +29,13 @@ class KinopoiskMain:
 		self.check_folders()
 
 	def check_folders(self):
-		cache_dir_path = os.path.join(self.work_dir, 'cache/images/stylized')
+		cache_dir_path = os.path.join(self.work_dir, '{0}{1}'.format(DOWLOADED_IMAGES_FOLDER, RESULT_IMAGES_FOLDER))
 		if not os.path.exists(cache_dir_path):
 			os.makedirs(cache_dir_path)
 
 	def stylize_downloaded_images(self):
-		os.chdir('cache/images')
-		images_names = [m for m in glob.glob("*.jpg")]
+		os.chdir(DOWLOADED_IMAGES_FOLDER)
+		images_names = [m for m in glob.glob("*.{}".format(IMG_FILE_FORMAT))]
 
 		os.chdir(self.work_dir)
 
@@ -36,17 +43,17 @@ class KinopoiskMain:
 
 		for im in images_names:
 			name = im.split('_')[0]
-			out_name = name + '.jpg'
+			out_name = name + '.{}'.format(IMG_FILE_FORMAT)
 
-			torch.stylize_image_with_torch('cache/images/{}'.format(im),
-									'cache/images/stylized/{}'.format(out_name),
-									img_size = 1002, 
-									model = 'mosaic.t7')
+			torch.stylize_image_with_torch('{0}{1}'.format(DOWLOADED_IMAGES_FOLDER,im),
+									'{0}{1}/{2}'.format(DOWLOADED_IMAGES_FOLDER, RESULT_IMAGES_FOLDER, out_name),
+									img_size = STYLIZED_IMG_SIZE, 
+									model = PRIMARY_TORCH_MODEL)
 		os.chdir(self.work_dir)
 
 	def get_stylized_images_names(self):
-		os.chdir('cache/images/stylized')
-		images_names = [i.replace('.jpg', '') for i in [m for m in glob.glob("*.jpg")]]
+		os.chdir('{0}{1}'.format(DOWLOADED_IMAGES_FOLDER, RESULT_IMAGES_FOLDER))
+		images_names = [i.replace('.{}'.format(IMG_FILE_FORMAT), '') for i in [m for m in glob.glob("*.{}".format(IMG_FILE_FORMAT))]]
 		shuffle(images_names)
 
 		logger.info(TAG, images_names)
@@ -74,12 +81,15 @@ class KinopoiskMain:
 		return json_str
 
 	def clear_db(self):
-		os.chdir('db')
-		db_names = [m for m in glob.glob("*.db")]
+		os.chdir(DB_FOLDER)
+		db_names = [m for m in glob.glob("*.{}".format(SQLITE_DB_EXT))]
 		logger.info(TAG, db_names)
 		for db in db_names:
 			os.remove(db)
 
 		os.chdir(self.work_dir)
+
+	def resize(self):
+		pass
 
 
