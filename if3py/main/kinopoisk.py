@@ -3,7 +3,7 @@
 
 from if3py.parsers.kinopoisk.kinopoisk import KinopoiskParser, ParserTop250Walls, IMG_FILE_FORMAT
 from if3py.ml.image.torch.stylize import TorchStylize
-from if3py.data.sqlite import SQLITE_DB_EXT, DB_FOLDER
+from if3py.data.sqlite import SqliteManager, SQLITE_DB_EXT, DB_FOLDER
 from if3py.utils import logger 
 
 import os, glob
@@ -88,6 +88,15 @@ class KinopoiskMain:
 			os.remove(db)
 
 		os.chdir(self.work_dir)
+
+	def export_csv(self):
+		self.export_csv_with_lang('ru')
+		self.export_csv_with_lang('en')
+
+	def export_csv_with_lang(self, lang):
+		base_dir = os.getcwd()
+		lite = SqliteManager(base_dir, lang)
+		lite.export_to_csv()
 
 	def resize(self):
 		pass

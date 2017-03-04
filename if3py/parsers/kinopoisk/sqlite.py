@@ -28,7 +28,7 @@ def arrange_films_to_db(films):
 
 class KinopoiskDB(SqliteManager):
 	def __init__(self, lang = 'ru'):
-		base_dir = os.getcwd() #os.path.dirname(os.path.abspath(__file__))
+		base_dir = os.getcwd()
 		SqliteManager.__init__(self, base_dir, lang)
 		self.level_pack_count = 40
 

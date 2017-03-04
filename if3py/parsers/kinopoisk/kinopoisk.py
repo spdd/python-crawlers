@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 from random import shuffle
 from if3py.utils import logger 
-from sqlite import arrange_films_to_db
+from if3py.parsers.kinopoisk.sqlite import arrange_films_to_db
 from if3py.network.factory import NetworkFactory
 
 import json

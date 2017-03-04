@@ -10,16 +10,18 @@ TAG = 'BASE_SQLITE'
 
 SQLITE_DB_EXT = 'sqlite'
 DB_FILE_NAME = 'data'
+
 DB_FOLDER = 'db'
+CSV_OUTPUT_FOLDER = 'db/csv'
 
 class SqliteManager:
 
 	def __init__(self, base_dir, lang = 'ru'):
+		self.base_dir = base_dir
 		self.lang = lang
 		logger.info(TAG, base_dir)
-		db_dir_path = os.path.join(base_dir, DB_FOLDER)
-		if not os.path.exists(db_dir_path):
-			os.makedirs(db_dir_path)
+		self.check_folders(DB_FOLDER)
+		self.check_folders(CSV_OUTPUT_FOLDER)
 
 		db_path = os.path.join(base_dir, "{0}/{1}_{2}.{3}".format(DB_FOLDER, DB_FILE_NAME, lang, SQLITE_DB_EXT))
 
@@ -31,6 +33,11 @@ class SqliteManager:
 		self.mLevel = 1
 		self.level_pack_count = 40
 
+	def check_folders(self, folder_name):
+		dir_path = os.path.join(self.base_dir, folder_name)
+		if not os.path.exists(dir_path):
+			os.makedirs(dir_path)
+
 	def create_db(self, conn):
 		cur = conn.cursor()
 
@@ -38,27 +45,27 @@ class SqliteManager:
 		field_type_text = 'TEXT'
 
 		# levels table
-		table_levels = 'levels'  
+		self.table_levels = 'levels'  
 		col_table_levels_1 = '_id'
 		col_table_levels_2 = 'level'
 		col_table_levels_3 = 'puzzle_id'
 
 		# puzzles table
-		table_puzzles = 'puzzles' 
+		self.table_puzzles = 'puzzles' 
 		col_table_puzzles_1 = '_id'
 		col_table_puzzles_2 = 'letters'
 		col_table_puzzles_3 = 'json'
 		col_table_puzzles_4 = 'difficulty'
 
 		cur.execute('CREATE TABLE IF NOT EXISTS {tn} ({nf1} {ft1}, {nf2} {ft2}, {nf3} {ft3}, PRIMARY KEY(_id))  '\
-        	.format(tn=table_levels, \
+        	.format(tn=self.table_levels, \
         		nf1=col_table_levels_1, ft1=field_type_int,
         		nf2=col_table_levels_2, ft2=field_type_int,
         		nf3=col_table_levels_3, ft3=field_type_text
         		))
 
 		cur.execute('CREATE TABLE IF NOT EXISTS {tn} ({nf1} {ft1}, {nf2} {ft2}, {nf3} {ft3}, {nf4} {ft4}, PRIMARY KEY(_id))  '\
-        	.format(tn=table_puzzles, \
+        	.format(tn=self.table_puzzles, \
         		nf1=col_table_puzzles_1, ft1=field_type_text,
         		nf2=col_table_puzzles_2, ft2=field_type_text,
         		nf3=col_table_puzzles_3, ft3=field_type_text,
@@ -87,6 +94,17 @@ class SqliteManager:
 			self.con.commit()
 		if count % self.level_pack_count == 0:
 			self.mLevel += 1
+
+	def export_to_csv(self):
+		self.read_and_save(self.table_puzzles)
+		self.read_and_save(self.table_levels)
+
+	def read_and_save(self, table_name):
+		import pandas.io.sql as sql
+		import csv
+		table = sql.read_sql_query('SELECT * FROM {0}'.format(table_name), self.con)
+		table.to_csv('{0}/{1}_{2}.csv'.format(CSV_OUTPUT_FOLDER, table_name, self.lang),
+		 encoding = 'utf-8', quotechar='"', quoting = csv.QUOTE_ALL, index = False)
 
 	def close(self):
 		self.con.close()
