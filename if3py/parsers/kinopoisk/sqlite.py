@@ -28,8 +28,7 @@ def arrange_films_to_db(films):
 
 class KinopoiskDB(SqliteManager):
 	def __init__(self, lang = 'ru'):
-		base_dir = os.getcwd()
-		SqliteManager.__init__(self, base_dir, lang)
+		SqliteManager.__init__(self, lang)
 		self.level_pack_count = 40
 
 	def createJson(self, film):

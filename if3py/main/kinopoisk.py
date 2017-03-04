@@ -5,6 +5,8 @@ from if3py.parsers.kinopoisk.kinopoisk import KinopoiskParser, ParserTop250Walls
 from if3py.ml.image.torch.stylize import TorchStylize
 from if3py.data.sqlite import SqliteManager, SQLITE_DB_EXT, DB_FOLDER
 from if3py.utils import logger 
+from if3py.utils.file import check_folder_and_create
+from if3py.utils.image import resize
 
 import os, glob
 from random import shuffle
@@ -17,6 +19,8 @@ TAG = 'KINOPOISK_MAIN'
 
 RESULT_IMAGES_FOLDER = 'stylized'
 DOWLOADED_IMAGES_FOLDER = 'cache/images/'
+FULL_STYLIZED_IMAGES_PATH = '{0}{1}'.format(DOWLOADED_IMAGES_FOLDER, RESULT_IMAGES_FOLDER)
+RESIZED_IMAGES_FOLDER = 'cache/images/resized'
 
 PRIMARY_TORCH_MODEL = 'mosaic.t7'
 STYLIZED_IMG_SIZE = 1002
@@ -26,12 +30,8 @@ class KinopoiskMain:
 	def __init__(self, test_mode = False):
 		self.test_mode = test_mode
 		self.work_dir = os.getcwd()
-		self.check_folders()
-
-	def check_folders(self):
-		cache_dir_path = os.path.join(self.work_dir, '{0}{1}'.format(DOWLOADED_IMAGES_FOLDER, RESULT_IMAGES_FOLDER))
-		if not os.path.exists(cache_dir_path):
-			os.makedirs(cache_dir_path)
+		check_folder_and_create(FULL_STYLIZED_IMAGES_PATH)
+		check_folder_and_create(RESIZED_IMAGES_FOLDER)
 
 	def stylize_downloaded_images(self):
 		os.chdir(DOWLOADED_IMAGES_FOLDER)
@@ -46,13 +46,15 @@ class KinopoiskMain:
 			out_name = name + '.{}'.format(IMG_FILE_FORMAT)
 
 			torch.stylize_image_with_torch('{0}{1}'.format(DOWLOADED_IMAGES_FOLDER,im),
-									'{0}{1}/{2}'.format(DOWLOADED_IMAGES_FOLDER, RESULT_IMAGES_FOLDER, out_name),
+									'{0}/{1}'.format(FULL_STYLIZED_IMAGES_PATH, out_name),
 									img_size = STYLIZED_IMG_SIZE, 
 									model = PRIMARY_TORCH_MODEL)
+			if self.test_mode:
+				break
 		os.chdir(self.work_dir)
 
 	def get_stylized_images_names(self):
-		os.chdir('{0}{1}'.format(DOWLOADED_IMAGES_FOLDER, RESULT_IMAGES_FOLDER))
+		os.chdir(FULL_STYLIZED_IMAGES_PATH)
 		images_names = [i.replace('.{}'.format(IMG_FILE_FORMAT), '') for i in [m for m in glob.glob("*.{}".format(IMG_FILE_FORMAT))]]
 		shuffle(images_names)
 
@@ -98,7 +100,20 @@ class KinopoiskMain:
 		lite = SqliteManager(base_dir, lang)
 		lite.export_to_csv()
 
-	def resize(self):
-		pass
+	def resize(self, basewidth):
+		os.chdir(FULL_STYLIZED_IMAGES_PATH)
+		images = [i for i in glob.glob('*.{}'.format(IMG_FILE_FORMAT))]
+		os.chdir(self.work_dir)
+
+		for image in images:
+			image_in = '{0}/{1}'.format(FULL_STYLIZED_IMAGES_PATH, image)
+			image_out = '{0}/{1}'.format(RESIZED_IMAGES_FOLDER, image)
+			resize(image_in, image_out, basewidth)
+			logger.info(TAG, image_out)
+			if self.test_mode:
+				break
+
+		logger.info(TAG, 'Success resized {} images'.format(len(images)))
+
 
 

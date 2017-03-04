@@ -3,7 +3,9 @@
 import os, glob
 import subprocess
 from random import randint
+
 from if3py.utils import logger 
+from if3py.utils.file import check_folder_and_create
 
 TAG = 'TORCH_STYLIZE'
 
@@ -14,8 +16,7 @@ class TorchStylize:
 
 	def init_workspace(self):
 		models_dir = os.getcwd() + '/torch/models'
-		if not os.path.exists(models_dir):
-			os.makedirs(models_dir)
+		check_folder_and_create(models_dir)
 
 		self.act_dir = os.getcwd() + '/torch/'
 
@@ -29,7 +30,7 @@ class TorchStylize:
 
 		self.lua_script = 'fast_neural_style.lua'
 
-		if not os.path.exists(self.lua_script):
+		if not os.path.exists('{0}{1}'.format(self.act_dir,self.lua_script)):
 			logger.info(TAG, 'Please put {0} to folder {1}'.format(self.lua_script, self.act_dir))
 
 	def get_random_model(self):
@@ -40,7 +41,7 @@ class TorchStylize:
 		os.chdir(self.act_dir)
 		if model is None:
 			model = self.get_random_model()
-		subprocess.call(["th", self.lua_script,
+		subprocess.call(["/Users/supergoodd/torch/install/bin/th", self.lua_script,
 						'-model', 'models/{}'.format(model),
 						'-image_size', str(img_size),
 						 '-input_image', self.work_dir + '/' + in_image,

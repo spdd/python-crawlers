@@ -5,6 +5,7 @@ import sqlite3 as lite
 import os.path
 
 from if3py.utils import logger 
+from if3py.utils.file import check_folder_and_create
 
 TAG = 'BASE_SQLITE'
 
@@ -16,14 +17,15 @@ CSV_OUTPUT_FOLDER = 'db/csv'
 
 class SqliteManager:
 
-	def __init__(self, base_dir, lang = 'ru'):
-		self.base_dir = base_dir
+	def __init__(self, lang = 'ru'):
+		self.base_dir = os.getcwd()
 		self.lang = lang
-		logger.info(TAG, base_dir)
-		self.check_folders(DB_FOLDER)
-		self.check_folders(CSV_OUTPUT_FOLDER)
+		logger.info(TAG, self.base_dir)
 
-		db_path = os.path.join(base_dir, "{0}/{1}_{2}.{3}".format(DB_FOLDER, DB_FILE_NAME, lang, SQLITE_DB_EXT))
+		check_folder_and_create(DB_FOLDER)
+		check_folder_and_create(CSV_OUTPUT_FOLDER)
+
+		db_path = os.path.join(self.base_dir, "{0}/{1}_{2}.{3}".format(DB_FOLDER, DB_FILE_NAME, lang, SQLITE_DB_EXT))
 
 		self.con = lite.connect(db_path)
 		with self.con:
@@ -32,11 +34,6 @@ class SqliteManager:
 			self.cur.execute("SELECT * FROM puzzles")
 		self.mLevel = 1
 		self.level_pack_count = 40
-
-	def check_folders(self, folder_name):
-		dir_path = os.path.join(self.base_dir, folder_name)
-		if not os.path.exists(dir_path):
-			os.makedirs(dir_path)
 
 	def create_db(self, conn):
 		cur = conn.cursor()
